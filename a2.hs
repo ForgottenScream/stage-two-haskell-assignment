@@ -12,3 +12,8 @@ showBoard board = putStrLn (unlines [showRow [board !! (i * 3 + j) | j <- [0 .. 
     showCell Nothing = "_"
     showCell (Just One) = "X"
     showCell (Just Two) = "O"
+
+toPos :: (Int, Int) -> Maybe Int
+toPos (x, y)
+  | x < 0 || x > 2 || y < 0 || y > 2 = Nothing
+  | otherwise = Just (3 * x + y)
