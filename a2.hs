@@ -1,33 +1,14 @@
 import Base
 import Control.Concurrent
 import DecisionTree
+import Prelude
 
-showBoard :: Board -> String
-showBoard board = buildString board "" 0
+showBoard :: Board -> IO ()
+showBoard board = putStrLn (unlines [showRow [board !! (i * 3 + j) | j <- [0 .. 2]] | i <- [0 .. 2]])
   where
-    buildString [] acc _ = acc
-    buildString (x : xs) acc count =
-      let newAcc = acc ++ formatCell x
-          newCount = count + 1
-          accWithNewLine =
-            if newCount `mod` 3 == 0 && not (null xs)
-              then newAcc ++ "\n"
-              else newAcc
-       in buildString xs accWithNewLine newCount
-    formatCell :: Maybe Player -> String
-    formatCell Nothing = "_ "
-    formatCell (Just One) = "X "
-    formatCell (Just Two) = "O "
-
-exampleBoard :: Board
-exampleBoard =
-  [ Just One,
-    Nothing,
-    Just Two,
-    Nothing,
-    Nothing,
-    Nothing,
-    Nothing,
-    Nothing,
-    Just One
-  ]
+    showRow :: [Maybe Player] -> String
+    showRow row = unwords [showCell cell | cell <- row]
+    showCell :: Maybe Player -> String
+    showCell Nothing = "_"
+    showCell (Just One) = "X"
+    showCell (Just Two) = "O"
