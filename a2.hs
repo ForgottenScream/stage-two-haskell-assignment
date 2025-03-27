@@ -17,3 +17,5 @@ toPos :: (Int, Int) -> Maybe Int
 toPos (x, y)
   | x < 0 || x > 2 || y < 0 || y > 2 = Nothing
   | otherwise = Just (3 * x + y)
+
+-- lookupBoard :: Board -> Int -> Maybe Player
