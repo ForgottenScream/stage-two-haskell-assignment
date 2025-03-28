@@ -80,7 +80,6 @@ writeChanTwice chan msg = do
   writeChan chan msg
   writeChan chan msg
 
--- This function initialises the game with checks for various states of the game.
 gameServer ::
   Player ->
   Board ->
@@ -92,38 +91,30 @@ gameServer player boardState p1move p2move resultChan = do
   hline
   putStrLn $ "Player " ++ playerToString player ++ ", enter your row (0-2) and then column (A-C):"
 
-  rowMove <- readChan (select player p1move p2move)
-  columnMove <- readChan (select player p1move p2move)
+  -- Read the move directly as an Int
+  index <- readChan (select player p1move p2move)
 
-  let pos = toPos (rowMove, columnMove)
-
-  case pos of
-    Just index -> do
-      putStrLn $ "Player " ++ playerToString player ++ " attempted to move to " ++ show index
-      case addToGameBoard boardState index player of
-        Just newBoard -> do
-          putStrLn $ showBoard newBoard
-          case checkWin newBoard of
-            Just winner -> do
-              putStrLn $ "Player " ++ playerToString player ++ " Wins!"
-              writeChanTwice resultChan (Win winner newBoard)
-              return (Just winner)
-            Nothing -> do
-              if availableMoves newBoard
-                then do
-                  putStrLn "The game continues."
-                  writeChanTwice resultChan (Continue newBoard)
-                  gameServer (flipPlayer player) newBoard p1move p2move resultChan
-                else do
-                  putStrLn "The game is a draw!"
-                  writeChanTwice resultChan (Draw newBoard)
-                  return Nothing
+  putStrLn $ "Player " ++ playerToString player ++ " attempted to move to " ++ show index
+  case addToGameBoard boardState index player of
+    Just newBoard -> do
+      putStrLn $ showBoard newBoard
+      case checkWin newBoard of
+        Just winner -> do
+          putStrLn $ "Player " ++ playerToString player ++ " Wins!"
+          writeChanTwice resultChan (Win winner newBoard)
+          return (Just winner)
         Nothing -> do
-          putStrLn "Invalid move! This position is already taken. The game continues."
-          writeChanTwice resultChan (Continue boardState)
-          gameServer (flipPlayer player) boardState p1move p2move resultChan
+          if availableMoves newBoard
+            then do
+              putStrLn "The game continues."
+              writeChanTwice resultChan (Continue newBoard)
+              gameServer (flipPlayer player) newBoard p1move p2move resultChan
+            else do
+              putStrLn "The game is a draw!"
+              writeChanTwice resultChan (Draw newBoard)
+              return Nothing
     Nothing -> do
-      putStrLn "Invalid position! Please enter a valid row and column. The game continues."
+      putStrLn "Invalid move! This position is already taken. The game continues."
       writeChanTwice resultChan (Continue boardState)
       gameServer (flipPlayer player) boardState p1move p2move resultChan
 
@@ -234,3 +225,21 @@ handlePostGame player coordinator = do
         putStrLn "Player One has chosen to play again."
       Stop -> do
         putStrLn "Player One has chosen to stop the tournament."
+
+dummyAIPlayer :: Player -> Chan Coordination -> Chan Int -> Chan Result -> IO ()
+dummyAIPlayer player coordinator moves resultChan = do
+  result <- readChan resultChan
+  case result of
+    Win winner _ -> putStrLn $ "Player " ++ playerToString winner ++ " has won the game!"
+    Draw _ -> putStrLn "This game is a draw."
+    Continue board -> do
+      putStrLn $ showBoard board
+      let index = 0  -- Always try to play in the top-left corner
+      if lookupBoard board index == Nothing  -- Check if the position is available
+        then do
+          writeChan moves index
+          dummyAIPlayer player coordinator moves resultChan
+        else do
+          putStrLn "Dummy AI cannot play, position is already taken."
+          -- Let the game continue without making a move
+          dummyAIPlayer player coordinator moves resultChan
