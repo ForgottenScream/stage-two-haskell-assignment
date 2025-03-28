@@ -91,7 +91,7 @@ gameServer player boardState p1move p2move resultChan = do
   hline
   putStrLn $ "Player " ++ playerToString player ++ ", enter your row (0-2) and then column (A-C):"
 
-  -- Read the move directly as an Int
+  
   index <- readChan (select player p1move p2move)
 
   putStrLn $ "Player " ++ playerToString player ++ " attempted to move to " ++ show index
@@ -162,6 +162,7 @@ startGame player1 player2 = do
 
   gameServerStart One (coordinatorP1, coordinatorP2) (p1move, p2move) (0,0) resultChan
 
+-- Part 3 Human Player
 parseInput :: String -> String -> Maybe Int
 parseInput rowString colString = do
   row <- parseRow rowString
