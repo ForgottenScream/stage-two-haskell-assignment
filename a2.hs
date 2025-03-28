@@ -28,4 +28,7 @@ toPos (x, y)
   | x < 0 || x > 2 || y < 0 || y > 2 = Nothing
   | otherwise = Just (x * 3 + y)
 
--- lookupBoard :: Board -> Int -> Maybe Player
+lookupBoard :: Board -> Int -> Maybe Player
+lookupBoard board index
+  | index < 0 || index >= length board = Nothing
+  | otherwise = board !! index
