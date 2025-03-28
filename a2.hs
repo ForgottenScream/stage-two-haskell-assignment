@@ -3,18 +3,6 @@ import Control.Concurrent
 import DecisionTree
 import Prelude
 
-exampleBoard =
-  [ Just One,
-    Just Two,
-    Just One,
-    Nothing,
-    Just One,
-    Nothing,
-    Just Two,
-    Nothing,
-    Just Two
-  ]
-
 -- Part 1 - Helper Functions
 
 -- Helper Function: Player to String, useful for dialog message
@@ -22,16 +10,7 @@ playerToString :: Player -> String
 playerToString One = "One"
 playerToString Two = "Two"
 
-letterToInt :: Char -> Int
-letterToInt col =
-  case col of
-    'A' -> 0
-    'a' -> 0
-    'B' -> 1
-    'b' -> 1
-    'C' -> 2
-    'c' -> 2
-
+-- Print the current state of the board
 showBoard :: Board -> String
 showBoard board = unlines [showRow i | i <- [0 .. 2]]
   where
@@ -40,16 +19,19 @@ showBoard board = unlines [showRow i | i <- [0 .. 2]]
     showCell (Just One) = "X "
     showCell (Just Two) = "O "
 
+-- Calculate the position on the board based on the coordinates given.
 toPos :: (Int, Int) -> Maybe Int
 toPos (x, y)
   | x < 0 || x > 2 || y < 0 || y > 2 = Nothing
   | otherwise = Just (x * 3 + y)
 
+-- Look up which player (if any) played on the specific position
 lookupBoard :: Board -> Int -> Maybe Player
 lookupBoard board index
   | index < 0 || index >= length board = Nothing
   | otherwise = board !! index
 
+-- Update the board with a players' move
 addToGameBoard :: Board -> Int -> Player -> Maybe Board
 addToGameBoard board index player
   | checkBoard = Just (addMove board index player)
@@ -59,6 +41,7 @@ addToGameBoard board index player
     addMove board index player =
       take index board ++ [Just player] ++ drop (index + 1) board
 
+-- Check if any player has won the game
 checkWin :: Board -> Maybe Player
 checkWin board =
   let winningCombinations =
@@ -78,22 +61,27 @@ checkWin board =
           _ -> Nothing
   in foldr ( \combo acc -> maybe acc Just (checkLine combo)) Nothing winningCombinations
 
+-- Create a simple seperator.
 hline :: IO ()
 hline = putStrLn (replicate 20 '-')
 
+-- Check if there are any available moves left on the board.
 availableMoves :: Board -> Bool
 availableMoves board = Nothing `elem` board
 
 -- Part 2 Game Server and Co-ordination
+
+-- Useful for alternating which player to receive a move from during the game.
 select :: Player -> Chan Int -> Chan Int -> Chan Int
 select player input1 input2 = if player == One then input1 else input2
 
+-- Write to both players' channels.
 writeChanTwice :: Chan a -> a -> IO ()
 writeChanTwice chan msg = do
   writeChan chan msg
   writeChan chan msg
 
-
+-- This function initialises the game with checks for various states of the game.
 gameServer ::
   Player ->
   Board ->
@@ -103,7 +91,7 @@ gameServer ::
   IO (Maybe Player)
 gameServer player boardState p1move p2move resultChan = do
   hline
-  putStrLn ("Player " ++ playerToString player ++ ", enter your row (0-2) and then column (A-C):")
+  putStrLn $ "Player " ++ playerToString player ++ ", enter your row (0-2) and then column (0-2):"
 
   rowMove <- readChan (select player p1move p2move)
   columnMove <- readChan (select player p1move p2move)
@@ -112,10 +100,10 @@ gameServer player boardState p1move p2move resultChan = do
 
   case pos of
     Just index -> do
-      putStrLn ("Player " ++ playerToString player ++ " attempted to move to " ++ show index)
+      putStrLn $ "Player " ++ playerToString player ++ " attempted to move to " ++ show index
       case addToGameBoard boardState index player of
         Just newBoard -> do
-          putStrLn (showBoard newBoard)
+          putStrLn $ showBoard newBoard
           case checkWin newBoard of
             Just winner -> do
               writeChan resultChan (Win winner newBoard)
@@ -137,3 +125,28 @@ gameServer player boardState p1move p2move resultChan = do
       putStrLn "Invalid position! Please enter a valid row and column. The game continues."
       writeChan resultChan (Continue boardState)
       gameServer (flipPlayer player) boardState p1move p2move resultChan
+
+-- This function will start the game server and handle whether another game will be played.
+gameServerStart :: Player
+              -> (Chan Coordination, Chan Coordination)
+              -> (Chan Int, Chan Int)
+              -> (Int, Int)
+              -> Chan Result -> IO ()
+gameServerStart startingPlayer (coordinatorP1, coordinatorP2) (p1move, p2move) (scoreP1, scoreP2) resultChan = do
+  let initialBoard = replicate 9 Nothing
+
+  result <- gameServer startingPlayer initialBoard p1move p2move resultChan
+  
+  putStrLn $ "Score Board: Player One = " ++ show scoreP1 ++ ", Player Two = " ++ show scoreP2
+
+  putStrLn "Play Again? Player One needs to say Y/N"
+  response <- getLine
+
+  if response == "Y" then do
+    writeChan coordinatorP1 Again
+    writeChan coordinatorP2 Again
+    gameServerStart (flipPlayer startingPlayer) (coordinatorP1, coordinatorP2) (p1move, p2move) (scoreP1, scoreP2) resultChan
+  else do
+    writeChan coordinatorP1 Stop
+    writeChan coordinatorP2 Stop
+    putStrLn "End of tournament!"
