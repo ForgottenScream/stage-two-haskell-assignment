@@ -74,4 +74,5 @@ hline :: IO ()
 hline = putStrLn (replicate 20 '-')
 
 -- Part 2 Game Server and Co-ordination
--- select :: Player -> Chan Int -> Chan Int -> Chan Int
+select :: Player -> Chan Int -> Chan Int -> Chan Int
+select player input1 input2 = if player == One then input1 else input2
