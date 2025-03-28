@@ -41,3 +41,29 @@ addToGameBoard board index player
     checkBoard = lookupBoard board index == Nothing
     addMove board index player =
       take index board ++ [Just player] ++ drop (index + 1) board
+
+checkWin :: Board -> Maybe Player
+checkWin board =
+  let winningCombinations =
+        [ (0, 1, 2),
+          (0, 3, 6),
+          (0, 4, 8),
+          (1, 4, 7),
+          (2, 5, 8),
+          (2, 3, 6),
+          (3, 4, 5),
+          (6, 7, 8)
+        ]
+
+      checkLine (a, b, c) =
+        case (board !! a, board !! b, board !! c) of
+          (Just p1, Just p2, Just p3) | p1 == p2 && p2 == p3 -> Just p1
+          _ -> Nothing
+   in foldr
+        ( \combo acc ->
+            case checkLine combo of
+              Just winner -> Just winner
+              Nothing -> acc
+        )
+        Nothing
+        winningCombinations
