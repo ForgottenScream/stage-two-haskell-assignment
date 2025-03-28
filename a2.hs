@@ -150,3 +150,22 @@ gameServerStart startingPlayer (coordinatorP1, coordinatorP2) (p1move, p2move) (
     writeChan coordinatorP1 Stop
     writeChan coordinatorP2 Stop
     putStrLn "End of tournament!"
+
+-- This function will start the game with the two players and the required processes.
+startGame :: (Player -> Chan Coordination -> Chan Int -> Chan Result -> IO ())
+          -> (Player -> Chan Coordination -> Chan Int -> Chan Result -> IO ())
+          -> IO ()
+startGame player1 player2 = do
+
+  -- creating channels for everything
+  coordinatorP1 <- newChan
+  coordinatorP2 <- newChan
+  p1move <- newChan
+  p2move <- newChan
+  resultChan <- newChan
+  
+  -- starting concurrent processes
+  _ <- forkIO $ player1 One coordinatorP1 p1move resultChan
+  _ <- forkIO $ player2 Two coordinatorP2 p2move resultChan
+
+  gameServerStart One (coordinatorP1, coordinatorP2) (p1move, p2move) (0,0) resultChan
