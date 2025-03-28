@@ -93,6 +93,7 @@ writeChanTwice chan msg = do
   writeChan chan msg
   writeChan chan msg
 
+
 gameServer ::
   Player ->
   Board ->
@@ -107,7 +108,6 @@ gameServer player boardState p1move p2move resultChan = do
   rowMove <- readChan (select player p1move p2move)
   columnMove <- readChan (select player p1move p2move)
 
-  -- Convert the row and column to a position
   let pos = toPos (rowMove, columnMove)
 
   case pos of
@@ -118,23 +118,22 @@ gameServer player boardState p1move p2move resultChan = do
           putStrLn (showBoard newBoard)
           case checkWin newBoard of
             Just winner -> do
-              writeChanTwice resultChan Win
+              writeChan resultChan (Win winner newBoard)
               return (Just winner)
             Nothing -> do
-              -- Check if there are available moves left
               if availableMoves newBoard
-                then gameServer (flipPlayer player) newBoard p1move p2move resultChan
+                then do
+                  writeChan resultChan (Continue newBoard)
+                  gameServer (flipPlayer player) newBoard p1move p2move resultChan
                 else do
                   putStrLn "The game is a draw!"
-                  writeChan resultChan Draw
+                  writeChan resultChan (Draw newBoard)
                   return Nothing
         Nothing -> do
-          -- Invalid move: position is already taken
           putStrLn "Invalid move! This position is already taken. The game continues."
-          writeChanTwice resultChan Continue
+          writeChan resultChan (Continue boardState)
           gameServer (flipPlayer player) boardState p1move p2move resultChan
     Nothing -> do
-      -- Invalid move: position is out of bounds
       putStrLn "Invalid position! Please enter a valid row and column. The game continues."
-      writeChanTwice resultChan Continue
+      writeChan resultChan (Continue boardState)
       gameServer (flipPlayer player) boardState p1move p2move resultChan
