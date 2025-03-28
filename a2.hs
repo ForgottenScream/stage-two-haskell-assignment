@@ -90,7 +90,7 @@ gameServer ::
   IO (Maybe Player)
 gameServer player boardState p1move p2move resultChan = do
   hline
-  putStrLn $ "Player " ++ playerToString player ++ ", enter your row (0-2) and then column (0-2):"
+  putStrLn $ "Player " ++ playerToString player ++ ", enter your row (0-2) and then column (A-C):"
 
   rowMove <- readChan (select player p1move p2move)
   columnMove <- readChan (select player p1move p2move)
@@ -105,24 +105,26 @@ gameServer player boardState p1move p2move resultChan = do
           putStrLn $ showBoard newBoard
           case checkWin newBoard of
             Just winner -> do
-              writeChan resultChan (Win winner newBoard)
+              putStrLn $ "Player " ++ playerToString player ++ " Wins!"
+              writeChanTwice resultChan (Win winner newBoard)
               return (Just winner)
             Nothing -> do
               if availableMoves newBoard
                 then do
-                  writeChan resultChan (Continue newBoard)
+                  putStrLn "The game continues."
+                  writeChanTwice resultChan (Continue newBoard)
                   gameServer (flipPlayer player) newBoard p1move p2move resultChan
                 else do
                   putStrLn "The game is a draw!"
-                  writeChan resultChan (Draw newBoard)
+                  writeChanTwice resultChan (Draw newBoard)
                   return Nothing
         Nothing -> do
           putStrLn "Invalid move! This position is already taken. The game continues."
-          writeChan resultChan (Continue boardState)
+          writeChanTwice resultChan (Continue boardState)
           gameServer (flipPlayer player) boardState p1move p2move resultChan
     Nothing -> do
       putStrLn "Invalid position! Please enter a valid row and column. The game continues."
-      writeChan resultChan (Continue boardState)
+      writeChanTwice resultChan (Continue boardState)
       gameServer (flipPlayer player) boardState p1move p2move resultChan
 
 -- This function will start the game server and handle whether another game will be played.
@@ -189,3 +191,46 @@ parseInput rowString colString = do
     parseCol "b" = Just 1
     parseCol "c" = Just 2
     parseCol _ = Nothing
+
+humanPlayer :: Player -> Chan Coordination -> Chan Int -> Chan Result -> IO ()
+humanPlayer player coordinator moves resultChan = do
+  -- start the game loop
+  humanPlayerGame player moves resultChan coordinator
+
+humanPlayerGame :: Player -> Chan Int -> Chan Result -> Chan Coordination -> IO ()
+humanPlayerGame player moves resultChan coordinator = do
+  result <- readChan resultChan --this should read the result from the game server
+  case result of
+    Win winner _ -> do
+      putStrLn $ "Player " ++ playerToString winner ++ " has won the game!"
+      handlePostGame player coordinator
+    Draw _ -> do
+      putStrLn "This game is a draw."
+      handlePostGame player coordinator
+    Continue board -> do
+      putStrLn $ showBoard board
+
+      rowInput <- getLine
+      colInput <- getLine
+      
+      case parseInput rowInput colInput of
+        Just index -> do
+          writeChan moves index
+          humanPlayerGame player moves resultChan coordinator
+
+handlePostGame :: Player -> Chan Coordination -> IO ()
+handlePostGame player coordinator = do
+  if player == One
+    then do
+      putStrLn "Player Again? Y/N"
+      response <- getLine
+      if response == "Y"
+        then writeChan coordinator Again
+        else writeChan coordinator Stop
+  else do
+    coordinationMessage <- readChan coordinator
+    case coordinationMessage of
+      Again -> do
+        putStrLn "Player One has chosen to play again."
+      Stop -> do
+        putStrLn "Player One has chosen to stop the tournament."
