@@ -227,6 +227,7 @@ handlePostGame player coordinator = do
       Stop -> do
         putStrLn "Player One has chosen to stop the tournament."
 
+-- This dummy player is for testing purposes.
 dummyAIPlayer :: Player -> Chan Coordination -> Chan Int -> Chan Result -> IO ()
 dummyAIPlayer player coordinator moves resultChan = do
   result <- readChan resultChan
@@ -235,12 +236,9 @@ dummyAIPlayer player coordinator moves resultChan = do
     Draw _ -> putStrLn "This game is a draw."
     Continue board -> do
       putStrLn $ showBoard board
-      let index = 0  -- Always try to play in the top-left corner
-      if lookupBoard board index == Nothing  -- Check if the position is available
-        then do
-          writeChan moves index
-          dummyAIPlayer player coordinator moves resultChan
-        else do
-          putStrLn "Dummy AI cannot play, position is already taken."
-          -- Let the game continue without making a move
-          dummyAIPlayer player coordinator moves resultChan
+      let index = 0
+      writeChan moves index
+      dummyAIPlayer player coordinator moves resultChan
+
+-- Part 4 AI Player
+-- unfortunately due to time constraints I was unable to complete the final part
