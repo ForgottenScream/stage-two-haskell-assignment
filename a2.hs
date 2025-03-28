@@ -67,3 +67,6 @@ checkWin board =
         )
         Nothing
         winningCombinations
+
+hline :: IO ()
+hline = putStrLn (replicate 20 '-')
