@@ -15,6 +15,8 @@ exampleBoard =
     Just Two
   ]
 
+-- Part 1 - Helper Functions
+
 showBoard :: Board -> String
 showBoard board = unlines [showRow i | i <- [0 .. 2]]
   where
@@ -70,3 +72,6 @@ checkWin board =
 
 hline :: IO ()
 hline = putStrLn (replicate 20 '-')
+
+-- Part 2 Game Server and Co-ordination
+-- select :: Player -> Chan Int -> Chan Int -> Chan Int
