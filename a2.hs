@@ -1,7 +1,6 @@
 import Base
 import Control.Concurrent
 import DecisionTree
-import Prelude
 
 -- Part 1 - Helper Functions
 
@@ -169,3 +168,24 @@ startGame player1 player2 = do
   _ <- forkIO $ player2 Two coordinatorP2 p2move resultChan
 
   gameServerStart One (coordinatorP1, coordinatorP2) (p1move, p2move) (0,0) resultChan
+
+parseInput :: String -> String -> Maybe Int
+parseInput rowString colString = do
+  row <- parseRow rowString
+  col <- parseCol colString
+  toPos (row, col)
+  where
+    parseRow :: String -> Maybe Int
+    parseRow "1" = Just 0
+    parseRow "2" = Just 1
+    parseRow "3" = Just 2
+    parseRow "_" = Nothing
+    
+    parseCol :: String -> Maybe Int
+    parseCol "A" = Just 0
+    parseCol "B" = Just 1
+    parseCol "C" = Just 2
+    parseCol "a" = Just 0
+    parseCol "b" = Just 1
+    parseCol "c" = Just 2
+    parseCol _ = Nothing
