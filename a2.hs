@@ -32,3 +32,12 @@ lookupBoard :: Board -> Int -> Maybe Player
 lookupBoard board index
   | index < 0 || index >= length board = Nothing
   | otherwise = board !! index
+
+addToGameBoard :: Board -> Int -> Player -> Maybe Board
+addToGameBoard board index player
+  | checkBoard = Just (addMove board index player)
+  | otherwise = Nothing
+  where
+    checkBoard = lookupBoard board index == Nothing
+    addMove board index player =
+      take index board ++ [Just player] ++ drop (index + 1) board
