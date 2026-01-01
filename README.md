@@ -13,5 +13,6 @@ The focus was on:
 Status: Complete for coursework requirements.
 Notes:
 - This was done with time constraints while learning Haskell at the time.
+- If I had more time I would complete the assignment and get it working.
 
 This repository is preserved as evidence of academic work and learning progress.
